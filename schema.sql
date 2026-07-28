@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   name text not null,
   email text not null unique,
   role text not null default 'corretor' check (role in ('admin', 'corretor')),
+  enabled boolean not null default true,
   created_at timestamptz not null default now()
 );
 
@@ -55,6 +56,7 @@ create table if not exists public.property_metrics (
 
 -- Compatibilidade com uma versão anterior do projeto.
 alter table public.profiles add column if not exists email text;
+alter table public.profiles add column if not exists enabled boolean not null default true;
 update public.profiles p set email = u.email from auth.users u where p.id = u.id and p.email is null;
 create unique index if not exists profiles_email_unique_idx on public.profiles(email);
 
@@ -115,12 +117,13 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, name, email, role)
+  insert into public.profiles (id, name, email, role, enabled)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
     new.email,
-    case when new.raw_user_meta_data->>'role' in ('admin','corretor') then new.raw_user_meta_data->>'role' else 'corretor' end
+    case when new.raw_user_meta_data->>'role' in ('admin','corretor') then new.raw_user_meta_data->>'role' else 'corretor' end,
+    true
   )
   on conflict (id) do update set
     name = excluded.name,
@@ -231,6 +234,27 @@ for update to authenticated using (bucket_id = 'property-images') with check (bu
 drop policy if exists "authenticated deletes property images" on storage.objects;
 create policy "authenticated deletes property images" on storage.objects
 for delete to authenticated using (bucket_id = 'property-images');
+
+
+insert into storage.buckets (id, name, public)
+values ('site-assets', 'site-assets', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "public reads site assets" on storage.objects;
+create policy "public reads site assets" on storage.objects
+for select using (bucket_id = 'site-assets');
+
+drop policy if exists "admins upload site assets" on storage.objects;
+create policy "admins upload site assets" on storage.objects
+for insert to authenticated with check (bucket_id = 'site-assets' and public.is_admin());
+
+drop policy if exists "admins update site assets" on storage.objects;
+create policy "admins update site assets" on storage.objects
+for update to authenticated using (bucket_id = 'site-assets' and public.is_admin()) with check (bucket_id = 'site-assets' and public.is_admin());
+
+drop policy if exists "admins delete site assets" on storage.objects;
+create policy "admins delete site assets" on storage.objects
+for delete to authenticated using (bucket_id = 'site-assets' and public.is_admin());
 
 -- Depois de criar o primeiro usuário no painel Authentication do Supabase,
 -- transforme-o em administrador:

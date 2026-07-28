@@ -1,104 +1,135 @@
-# Prime Lar Pro V2
+# Prime Lar Pro V3
 
-Versão atualizada mantendo o mesmo layout e acrescentando:
+Esta versão mantém o layout anterior e acrescenta:
 
-- ícone oficial do WhatsApp em SVG;
-- acesso administrativo discreto no rodapé;
-- banco de dados Supabase para imóveis, configurações e perfis de usuários;
-- criação real de administradores e corretores por função segura;
-- código automático no formato `IMV-00001`;
-- upload de várias imagens por anúncio;
-- seleção de disponibilidade: Disponível, Alugado, Vendido ou Reservado;
-- alteração rápida da disponibilidade na tela **Imóveis**;
-- modo local para demonstração quando o Supabase ainda não estiver configurado.
+- logotipo real no cabeçalho, rodapé, login e painel;
+- upload do logotipo diretamente do computador;
+- criação, edição, desativação, reativação e exclusão de usuários;
+- alteração de nome, e-mail, perfil e senha dos usuários;
+- proteção para o administrador não excluir ou desabilitar a própria conta;
+- banco de dados para imóveis e corretores;
+- múltiplas imagens por anúncio;
+- código automático do imóvel;
+- disponibilidade: Disponível, Alugado, Vendido ou Reservado.
 
 ## Testar sem Supabase
 
-Abra `index.html` para o site e `admin.html` para o painel.
+Abra `index.html` e `admin.html` por um servidor local.
 
-Acessos locais:
+Administrador:
 
-- Administrador: `admin@demo.com` / `admin123`
-- Corretor: `corretor@demo.com` / `corretor123`
-
-No modo local, os dados continuam presos ao navegador. Para aparecerem em todos os aparelhos, configure o Supabase.
-
-## Configurar o banco de dados
-
-1. Crie um projeto em Supabase.
-2. No menu **SQL Editor**, execute todo o arquivo `schema.sql`.
-3. Vá a **Authentication > Users** e crie seu primeiro usuário.
-4. O gatilho do banco criará o perfil automaticamente como corretor.
-5. No SQL Editor, transforme esse primeiro usuário em administrador:
-
-```sql
-update public.profiles
-set role = 'admin'
-where email = 'seu-email@exemplo.com';
+```text
+admin@demo.com
+admin123
 ```
 
-6. Abra **Project Settings > API** e copie:
-   - Project URL;
-   - chave pública `anon`.
-7. Edite `supabase-config.js`:
+Corretor:
 
-```js
+```text
+corretor@demo.com
+corretor123
+```
+
+No modo demonstração, os dados continuam armazenados apenas no navegador.
+
+## Atualizar um projeto Supabase já existente
+
+Abra o **SQL Editor** do Supabase e execute novamente o arquivo:
+
+```text
+schema.sql
+```
+
+Ele foi preparado para adicionar os campos novos sem apagar os imóveis existentes. O script cria:
+
+- o campo `enabled` na tabela `profiles`;
+- o bucket público `site-assets` para o logotipo;
+- as políticas de acesso necessárias;
+- as tabelas e políticas dos imóveis, usuários e configurações.
+
+## Configurar o site
+
+Edite apenas o arquivo `supabase-config.js`:
+
+```javascript
 window.SUPABASE_CONFIG = {
   url: "https://SEU-PROJETO.supabase.co",
-  anonKey: "SUA_CHAVE_ANON",
+  anonKey: "sb_publishable_SUA_CHAVE_PUBLICAVEL",
   storageBucket: "property-images",
-  createUserFunction: "create-user"
+  logoBucket: "site-assets",
+  createUserFunction: "create-user",
+  manageUserFunction: "manage-user"
 };
 ```
 
-## Publicar a função de criação de usuários
+Use somente a chave pública `sb_publishable_...`. Nunca coloque uma chave `sb_secret_...` ou `service_role` no navegador.
 
-A criação de usuários precisa da chave administrativa, portanto é executada em uma Supabase Edge Function, nunca no navegador.
+## Publicar as Edge Functions
 
-Instale a CLI do Supabase e faça login:
+Na pasta do projeto, faça login na CLI do Supabase e vincule o projeto:
 
 ```bash
-npm install -g supabase
 supabase login
+supabase link --project-ref SEU_PROJECT_REF
 ```
 
-Dentro da pasta do projeto:
+Publique as duas funções:
 
 ```bash
-supabase link --project-ref SEU_PROJECT_REF
 supabase functions deploy create-user
+supabase functions deploy manage-user
 ```
 
-As variáveis `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` são disponibilizadas automaticamente no ambiente das funções hospedadas pelo Supabase.
+As variáveis `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` são disponibilizadas pelo ambiente das Edge Functions. A chave administrativa permanece no servidor e não é colocada nos arquivos do site.
 
-Depois disso, o administrador poderá criar corretores e outros administradores diretamente pela aba **Usuários**.
+## Primeiro administrador
 
-## Como funcionam os códigos
+Crie o primeiro usuário em **Authentication → Users** no painel do Supabase. Depois, execute no SQL Editor:
 
-O código não é digitado manualmente. O banco usa uma sequência e cria automaticamente:
+```sql
+update public.profiles
+set role = 'admin', enabled = true
+where email = 'SEU_EMAIL@EXEMPLO.COM';
+```
 
-- `IMV-00001`
-- `IMV-00002`
-- `IMV-00003`
+Depois disso, esse administrador poderá criar e gerenciar os demais usuários pelo próprio site.
 
-Assim não existem códigos repetidos, mesmo que dois corretores cadastrem imóveis quase ao mesmo tempo.
+## Logotipo
 
-## Imagens
+O projeto já inclui o arquivo:
 
-O campo de imagens aceita múltiplos arquivos. A primeira foto será a capa. No modo Supabase, as imagens são enviadas ao bucket público `property-images`.
+```text
+assets/logo-prime-lar.png
+```
 
-## Disponibilidade
+No painel, entre em **Configurações → Logotipo da empresa** para escolher outro arquivo do computador. O arquivo será enviado ao bucket `site-assets` e aparecerá automaticamente no site.
 
-- **Disponível:** botão de contato liberado;
-- **Reservado:** anúncio permanece visível, mas sinalizado;
-- **Alugado:** anúncio permanece visível com a identificação de alugado;
-- **Vendido:** anúncio permanece visível com a identificação de vendido;
-- **Exibir no site:** controla se o anúncio aparece ou fica completamente oculto.
+Formatos recomendados:
 
-Na aba **Imóveis**, a disponibilidade pode ser alterada diretamente no seletor de cada anúncio.
+- PNG com fundo transparente;
+- SVG;
+- WebP;
+- JPEG.
 
-## Publicação do site
+Tamanho máximo configurado no site: 5 MB.
 
-Você pode publicar a pasta no Netlify. Depois de configurar o Supabase, todos os aparelhos consultarão o mesmo banco de dados.
+## Usuários
 
-Não publique a chave `service_role` no Netlify, no GitHub ou em qualquer JavaScript do site. Ela deve existir somente no ambiente seguro da Edge Function.
+Na aba **Usuários**, o administrador pode:
+
+- criar um usuário;
+- editar nome, e-mail e perfil;
+- definir uma nova senha;
+- desabilitar o acesso durante férias ou afastamentos;
+- reativar o acesso;
+- excluir definitivamente o usuário.
+
+Ao desabilitar um usuário no Supabase, a conta é bloqueada no sistema de autenticação e marcada como desabilitada na tabela `profiles`.
+
+## Publicação no Netlify
+
+Depois de configurar o Supabase e publicar as funções, envie todos os arquivos da pasta para o Netlify. Faça uma atualização forçada no navegador após o deploy:
+
+```text
+Ctrl + F5
+```

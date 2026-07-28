@@ -13,7 +13,7 @@
 <body class="admin-body">
   <section id="loginScreen" class="login-screen">
     <div class="login-card">
-      <a class="brand" href="index.html"><span class="brand-mark">PL</span><span><strong>Prime Lar</strong><small>Painel administrativo</small></span></a>
+      <a class="brand" href="index.html"><span class="brand-logo-shell"><img class="brand-logo" data-brand-logo src="assets/logo-prime-lar.png" alt="Logotipo Prime Lar"></span><span><strong>Prime Lar</strong><small>Painel administrativo</small></span></a>
       <div><span class="eyebrow">Acesso restrito</span><h1>Entre no painel</h1><p>Use sua conta cadastrada no Supabase.</p></div>
       <form id="loginForm">
         <label>E-mail<input id="loginEmail" type="email" required autocomplete="username" placeholder="admin@demo.com"></label>
@@ -29,7 +29,7 @@
   <div id="adminApp" class="admin-app hidden">
     <aside id="sidebar">
       <div>
-        <a class="brand brand-admin" href="index.html"><span class="brand-mark">PL</span><span><strong>Prime Lar</strong><small>Gestão imobiliária</small></span></a>
+        <a class="brand brand-admin" href="index.html"><span class="brand-logo-shell"><img class="brand-logo" data-brand-logo src="assets/logo-prime-lar.png" alt="Logotipo Prime Lar"></span><span><strong>Prime Lar</strong><small>Gestão imobiliária</small></span></a>
         <nav class="admin-nav">
           <button data-view="dashboard" class="active">Visão geral</button>
           <button data-view="properties">Imóveis</button>
@@ -124,7 +124,7 @@
 
       <section id="usersView" class="admin-view hidden admin-only">
         <div class="panel">
-          <div class="panel-head"><div><h2>Usuários</h2><p>Crie acessos para administradores e corretores.</p></div></div>
+          <div class="panel-head"><div><h2>Usuários</h2><p>Crie, edite, desabilite temporariamente ou exclua acessos.</p></div></div>
           <form id="userForm" class="user-create-form">
             <label>Nome<input id="uName" required placeholder="Nome do corretor"></label>
             <label>E-mail<input id="uEmail" type="email" required placeholder="corretor@email.com"></label>
@@ -141,17 +141,43 @@
         <form id="settingsForm" class="panel">
           <h2>Configurações do site</h2>
           <div class="form-grid">
-            <label>Nome<input id="cName"></label><label>Iniciais<input id="cInitials" maxlength="3"></label>
-            <label>WhatsApp<input id="cWhatsapp"></label><label>Telefone exibido<input id="cPhone"></label>
-            <label>Instagram<input id="cInstagram"></label><label>Cidade/Endereço<input id="cAddress"></label>
-            <label>Cor principal<input id="cPrimary" type="color"></label><label>Cor de destaque<input id="cAccent" type="color"></label>
-            <label class="span2">Descrição<textarea id="cDescription"></textarea></label><label class="span2">Logo (URL)<input id="cLogo" type="url"></label>
+            <label>Nome<input id="cName"></label><label>WhatsApp<input id="cWhatsapp"></label>
+            <label>Telefone exibido<input id="cPhone"></label><label>Instagram<input id="cInstagram"></label>
+            <label>Cidade/Endereço<input id="cAddress"></label><label>Cor principal<input id="cPrimary" type="color"></label>
+            <label>Cor de destaque<input id="cAccent" type="color"></label>
+            <label class="span2">Descrição<textarea id="cDescription"></textarea></label>
+            <div class="span2 logo-setting">
+              <span class="setting-label">Logotipo da empresa</span>
+              <div class="logo-upload-card">
+                <div class="logo-preview-box"><img id="cLogoPreview" src="assets/logo-prime-lar.png" alt="Prévia do logotipo"></div>
+                <div>
+                  <input id="cLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+                  <small>Selecione uma imagem do computador. Recomendado: PNG ou SVG com fundo transparente.</small>
+                </div>
+              </div>
+            </div>
           </div>
           <button class="btn primary">Salvar configurações</button>
         </form>
       </section>
     </main>
   </div>
+
+
+  <dialog id="userDialog" class="user-dialog">
+    <form id="editUserForm" method="dialog">
+      <div class="dialog-heading">
+        <div><span class="eyebrow">Gerenciar acesso</span><h2>Editar usuário</h2></div>
+        <button id="closeUserDialog" type="button" class="dialog-x" aria-label="Fechar">×</button>
+      </div>
+      <input id="editUserId" type="hidden">
+      <label>Nome<input id="editUserName" required></label>
+      <label>E-mail<input id="editUserEmail" type="email" required></label>
+      <label>Perfil<select id="editUserRole"><option value="corretor">Corretor</option><option value="admin">Administrador</option></select></label>
+      <label>Nova senha <small>(opcional)</small><input id="editUserPassword" type="password" minlength="6" placeholder="Deixe vazio para manter a atual"></label>
+      <div class="actions"><button class="btn primary">Salvar alterações</button><button id="cancelUserEdit" type="button" class="btn outline">Cancelar</button></div>
+    </form>
+  </dialog>
 
   <div id="toast" class="toast hidden"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

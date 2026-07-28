@@ -8,7 +8,6 @@ const K = {
 
 const DEF_SETTINGS = {
   name: "Prime Lar",
-  initials: "PL",
   whatsapp: "5564999999999",
   phone: "(64) 99999-9999",
   instagram: "https://instagram.com/",
@@ -16,7 +15,7 @@ const DEF_SETTINGS = {
   description: "Imóveis para venda e aluguel com atendimento simples e próximo.",
   primary: "#0f3d32",
   accent: "#c89b5b",
-  logo: ""
+  logo: "assets/logo-prime-lar.png"
 };
 
 const DEF_PROPERTIES = [
@@ -52,8 +51,8 @@ const DEF_PROPERTIES = [
 ];
 
 const DEF_USERS = [
-  { id: "demo-admin", name: "Administrador Demo", email: "admin@demo.com", password: "admin123", role: "admin", createdAt: new Date().toISOString() },
-  { id: "demo-corretor", name: "Corretor Demo", email: "corretor@demo.com", password: "corretor123", role: "corretor", createdAt: new Date().toISOString() }
+  { id: "demo-admin", name: "Administrador Demo", email: "admin@demo.com", password: "admin123", role: "admin", enabled: true, createdAt: new Date().toISOString() },
+  { id: "demo-corretor", name: "Corretor Demo", email: "corretor@demo.com", password: "corretor123", role: "corretor", enabled: true, createdAt: new Date().toISOString() }
 ];
 
 function hasSupabaseConfig() {
@@ -116,7 +115,10 @@ function applyBrand(settings) {
   document.documentElement.style.setProperty("--primary", settings.primary || DEF_SETTINGS.primary);
   document.documentElement.style.setProperty("--accent", settings.accent || DEF_SETTINGS.accent);
   document.querySelectorAll("[data-brand-name]").forEach(el => el.textContent = settings.name);
-  document.querySelectorAll("[data-brand-initials]").forEach(el => el.textContent = settings.initials);
+  document.querySelectorAll("[data-brand-logo]").forEach(el => {
+    el.src = settings.logo || DEF_SETTINGS.logo;
+    el.alt = `Logotipo ${settings.name || DEF_SETTINGS.name}`;
+  });
   document.querySelectorAll("[data-description]").forEach(el => el.textContent = settings.description);
   document.querySelectorAll("[data-phone]").forEach(el => el.textContent = settings.phone);
   document.querySelectorAll("[data-address]").forEach(el => el.textContent = settings.address);
@@ -142,14 +144,15 @@ async function saveSettings(settings) {
 }
 
 function mapSettingsFromDb(s) {
-  return { name: s.name, initials: s.initials, whatsapp: s.whatsapp, phone: s.phone, instagram: s.instagram,
-    address: s.address, description: s.description, primary: s.primary_color, accent: s.accent_color, logo: s.logo_url || "" };
+  return { name: s.name, whatsapp: s.whatsapp, phone: s.phone, instagram: s.instagram,
+    address: s.address, description: s.description, primary: s.primary_color, accent: s.accent_color,
+    logo: s.logo_url || DEF_SETTINGS.logo };
 }
 
 function mapSettingsToDb(s) {
-  return { id: 1, name: s.name, initials: s.initials, whatsapp: s.whatsapp, phone: s.phone,
+  return { id: 1, name: s.name, whatsapp: s.whatsapp, phone: s.phone,
     instagram: s.instagram, address: s.address, description: s.description, primary_color: s.primary,
-    accent_color: s.accent, logo_url: s.logo || "", updated_at: new Date().toISOString() };
+    accent_color: s.accent, logo_url: s.logo || DEF_SETTINGS.logo, updated_at: new Date().toISOString() };
 }
 
 async function getProperties() {
@@ -254,13 +257,36 @@ async function uploadPropertyImages(files) {
   return urls;
 }
 
+async function uploadBrandLogo(file) {
+  if (!file) return "";
+  if (!file.type.startsWith("image/") && file.type !== "image/svg+xml") throw new Error("Selecione um arquivo de imagem válido.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("O logotipo deve ter no máximo 5 MB.");
+
+  if (!db) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const bucket = window.SUPABASE_CONFIG.logoBucket || "site-assets";
+  const extension = file.name.split(".").pop()?.toLowerCase() || "png";
+  const path = `branding/logo-${Date.now()}.${extension}`;
+  const { error } = await db.storage.from(bucket).upload(path, file, { cacheControl: "3600", upsert: false });
+  if (error) throw new Error(`Falha ao enviar o logotipo: ${error.message}`);
+  const { data } = db.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 async function getProfiles() {
   if (db) {
-    const { data, error } = await db.from("profiles").select("id,name,email,role,created_at").order("created_at", { ascending: false });
+    const { data, error } = await db.from("profiles").select("id,name,email,role,enabled,created_at").order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data.map(p => ({ id: p.id, name: p.name, email: p.email, role: p.role, createdAt: p.created_at }));
+    return data.map(p => ({ id: p.id, name: p.name, email: p.email, role: p.role, enabled: p.enabled !== false, createdAt: p.created_at }));
   }
-  return localGet(K.users, DEF_USERS);
+  return localGet(K.users, DEF_USERS).map(user => ({ ...user, enabled: user.enabled !== false }));
 }
 
 async function createUserAccount({ name, email, password, role }) {
@@ -275,10 +301,55 @@ async function createUserAccount({ name, email, password, role }) {
 
   const users = localGet(K.users, DEF_USERS);
   if (users.some(user => user.email.toLowerCase() === email.toLowerCase())) throw new Error("Já existe um usuário com este e-mail.");
-  const user = { id: crypto.randomUUID(), name, email, password, role, createdAt: new Date().toISOString() };
+  const user = { id: crypto.randomUUID(), name, email, password, role, enabled: true, createdAt: new Date().toISOString() };
   users.unshift(user);
   localSet(K.users, users);
   return user;
+}
+
+async function invokeManageUser(body) {
+  if (!db) return null;
+  const { data, error } = await db.functions.invoke(window.SUPABASE_CONFIG.manageUserFunction || "manage-user", { body });
+  if (error) throw new Error(error.message || "Não foi possível gerenciar o usuário.");
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+async function updateUserAccount({ id, name, email, role, password }) {
+  if (db) {
+    const data = await invokeManageUser({ action: "update", id, name, email, role, password: password || undefined });
+    return data.user;
+  }
+  const users = localGet(K.users, DEF_USERS);
+  const user = users.find(item => item.id === id);
+  if (!user) throw new Error("Usuário não encontrado.");
+  if (users.some(item => item.id !== id && item.email.toLowerCase() === email.toLowerCase())) throw new Error("Já existe um usuário com este e-mail.");
+  Object.assign(user, { name, email, role });
+  if (password) user.password = password;
+  localSet(K.users, users);
+  return user;
+}
+
+async function setUserEnabled(id, enabled) {
+  if (db) {
+    const data = await invokeManageUser({ action: enabled ? "enable" : "disable", id });
+    return data.user;
+  }
+  const users = localGet(K.users, DEF_USERS);
+  const user = users.find(item => item.id === id);
+  if (!user) throw new Error("Usuário não encontrado.");
+  user.enabled = enabled;
+  localSet(K.users, users);
+  return user;
+}
+
+async function deleteUserAccount(id) {
+  if (db) {
+    await invokeManageUser({ action: "delete", id });
+    return;
+  }
+  const users = localGet(K.users, DEF_USERS).filter(item => item.id !== id);
+  localSet(K.users, users);
 }
 
 async function getAnalytics() {

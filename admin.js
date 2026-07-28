@@ -3,6 +3,8 @@ let uploads = [];
 let editing = null;
 let currentUser = null;
 let profiles = [];
+let currentSettings = null;
+let selectedLogoFile = null;
 
 const demos = {
   "admin@demo.com": { password: "admin123", role: "admin", name: "Administrador Demo" },
@@ -38,7 +40,12 @@ function bindAdmin() {
   document.getElementById("adminSearch").oninput = renderList;
   document.getElementById("statusFilter").onchange = renderList;
   document.getElementById("userForm").onsubmit = addUser;
+  document.getElementById("userList").onclick = handleUserAction;
+  document.getElementById("editUserForm").onsubmit = saveUserEdit;
+  document.getElementById("closeUserDialog").onclick = closeUserDialog;
+  document.getElementById("cancelUserEdit").onclick = closeUserDialog;
   document.getElementById("settingsForm").onsubmit = saveConfig;
+  document.getElementById("cLogoFile").onchange = previewSelectedLogo;
 
   const dropZone = document.getElementById("dropZone");
   const input = document.getElementById("pImages");
@@ -50,9 +57,13 @@ function bindAdmin() {
 }
 
 async function buildRemoteUser(authUser) {
-  const { data: profile, error } = await db.from("profiles").select("id,name,email,role").eq("id", authUser.id).single();
+  const { data: profile, error } = await db.from("profiles").select("id,name,email,role,enabled").eq("id", authUser.id).single();
   if (error) throw new Error("O usuário existe, mas não possui perfil no banco.");
-  return { id: profile.id, email: profile.email || authUser.email, name: profile.name, role: profile.role };
+  if (profile.enabled === false) {
+    await db.auth.signOut();
+    throw new Error("Este usuário está temporariamente desabilitado.");
+  }
+  return { id: profile.id, email: profile.email || authUser.email, name: profile.name, role: profile.role, enabled: true };
 }
 
 async function login(event) {
@@ -71,11 +82,10 @@ async function login(event) {
       return;
     }
 
-    const demo = demos[email];
-    const localUser = localGet(K.users, DEF_USERS).find(item => item.email.toLowerCase() === email);
-    const account = demo || localUser;
+    const account = localGet(K.users, DEF_USERS).find(item => item.email.toLowerCase() === email);
     if (!account || account.password !== password) throw new Error("Credenciais inválidas.");
-    currentUser = { id: account.id || email, email, name: account.name, role: account.role };
+    if (account.enabled === false) throw new Error("Este usuário está temporariamente desabilitado.");
+    currentUser = { id: account.id || email, email, name: account.name, role: account.role, enabled: true };
     localSet(K.session, currentUser);
     await enter();
   } catch (error) {
@@ -335,7 +345,95 @@ function resetForm() {
 }
 
 function renderUsers() {
-  document.getElementById("userList").innerHTML = profiles.map(profile => `<div class="user-row"><span><strong>${esc(profile.name)}</strong><small>${esc(profile.email)}</small></span><em>${profile.role === "admin" ? "Administrador" : "Corretor"}</em></div>`).join("") || "<p>Nenhum usuário encontrado.</p>";
+  document.getElementById("userList").innerHTML = profiles.map(profile => {
+    const isCurrent = profile.id === currentUser.id;
+    return `<div class="user-row ${profile.enabled === false ? "user-disabled" : ""}">
+      <span class="user-info"><strong>${esc(profile.name)}${isCurrent ? " <small>(você)</small>" : ""}</strong><small>${esc(profile.email)}</small></span>
+      <span class="user-meta"><em>${profile.role === "admin" ? "Administrador" : "Corretor"}</em><b class="user-status ${profile.enabled === false ? "disabled" : "enabled"}">${profile.enabled === false ? "Desabilitado" : "Ativo"}</b></span>
+      <div class="user-actions">
+        <button data-user-action="edit" data-id="${profile.id}">Editar</button>
+        <button data-user-action="toggle" data-id="${profile.id}" ${isCurrent ? "disabled title='Você não pode desabilitar a própria conta'" : ""}>${profile.enabled === false ? "Reativar" : "Desabilitar"}</button>
+        <button data-user-action="delete" data-id="${profile.id}" class="danger" ${isCurrent ? "disabled title='Você não pode excluir a própria conta'" : ""}>Excluir</button>
+      </div>
+    </div>`;
+  }).join("") || "<p>Nenhum usuário encontrado.</p>";
+}
+
+function openUserDialog(profile) {
+  document.getElementById("editUserId").value = profile.id;
+  document.getElementById("editUserName").value = profile.name;
+  document.getElementById("editUserEmail").value = profile.email;
+  document.getElementById("editUserRole").value = profile.role;
+  document.getElementById("editUserPassword").value = "";
+  document.getElementById("userDialog").showModal();
+}
+
+function closeUserDialog() {
+  document.getElementById("userDialog").close();
+}
+
+async function handleUserAction(event) {
+  const button = event.target.closest("[data-user-action]");
+  if (!button || button.disabled) return;
+  const profile = profiles.find(item => item.id === button.dataset.id);
+  if (!profile) return;
+
+  try {
+    if (button.dataset.userAction === "edit") {
+      openUserDialog(profile);
+      return;
+    }
+    if (button.dataset.userAction === "toggle") {
+      const enabling = profile.enabled === false;
+      if (!enabling && !confirm(`Desabilitar temporariamente o acesso de ${profile.name}?`)) return;
+      await setUserEnabled(profile.id, enabling);
+      toast(enabling ? "Usuário reativado." : "Usuário desabilitado temporariamente.");
+    }
+    if (button.dataset.userAction === "delete") {
+      if (!confirm(`Excluir definitivamente o usuário ${profile.name}? Esta ação não pode ser desfeita.`)) return;
+      await deleteUserAccount(profile.id);
+      toast("Usuário excluído.");
+    }
+    profiles = await getProfiles();
+    renderUsers();
+  } catch (error) {
+    console.error(error);
+    toast(`Erro: ${error.message}`);
+  }
+}
+
+async function saveUserEdit(event) {
+  event.preventDefault();
+  const submit = event.submitter;
+  submit.disabled = true;
+  submit.textContent = "Salvando...";
+  try {
+    const id = document.getElementById("editUserId").value;
+    const requestedRole = document.getElementById("editUserRole").value;
+    if (id === currentUser.id && requestedRole !== "admin") throw new Error("Você não pode remover o próprio perfil de administrador.");
+    const updated = await updateUserAccount({
+      id,
+      name: document.getElementById("editUserName").value.trim(),
+      email: document.getElementById("editUserEmail").value.trim().toLowerCase(),
+      role: requestedRole,
+      password: document.getElementById("editUserPassword").value
+    });
+    if (id === currentUser.id) {
+      currentUser = { ...currentUser, name: updated.name, email: updated.email, role: updated.role };
+      localSet(K.session, currentUser);
+      document.getElementById("roleLabel").textContent = currentUser.role === "admin" ? `Administrador · ${currentUser.name}` : `Corretor · ${currentUser.name}`;
+    }
+    profiles = await getProfiles();
+    renderUsers();
+    closeUserDialog();
+    toast("Usuário atualizado.");
+  } catch (error) {
+    console.error(error);
+    toast(`Erro: ${error.message}`);
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Salvar alterações";
+  }
 }
 
 async function addUser(event) {
@@ -368,41 +466,64 @@ async function addUser(event) {
 }
 
 async function fillConfig() {
-  const settings = await getSettings();
-  document.getElementById("cName").value = settings.name;
-  document.getElementById("cInitials").value = settings.initials;
-  document.getElementById("cWhatsapp").value = settings.whatsapp;
-  document.getElementById("cPhone").value = settings.phone;
-  document.getElementById("cInstagram").value = settings.instagram;
-  document.getElementById("cAddress").value = settings.address;
-  document.getElementById("cPrimary").value = settings.primary;
-  document.getElementById("cAccent").value = settings.accent;
-  document.getElementById("cDescription").value = settings.description;
-  document.getElementById("cLogo").value = settings.logo;
-  applyBrand(settings);
+  currentSettings = await getSettings();
+  document.getElementById("cName").value = currentSettings.name;
+  document.getElementById("cWhatsapp").value = currentSettings.whatsapp;
+  document.getElementById("cPhone").value = currentSettings.phone;
+  document.getElementById("cInstagram").value = currentSettings.instagram;
+  document.getElementById("cAddress").value = currentSettings.address;
+  document.getElementById("cPrimary").value = currentSettings.primary;
+  document.getElementById("cAccent").value = currentSettings.accent;
+  document.getElementById("cDescription").value = currentSettings.description;
+  document.getElementById("cLogoPreview").src = currentSettings.logo || DEF_SETTINGS.logo;
+  selectedLogoFile = null;
+  document.getElementById("cLogoFile").value = "";
+  applyBrand(currentSettings);
+}
+
+function previewSelectedLogo(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/") && file.type !== "image/svg+xml") {
+    toast("Selecione uma imagem válida.");
+    event.target.value = "";
+    return;
+  }
+  selectedLogoFile = file;
+  document.getElementById("cLogoPreview").src = URL.createObjectURL(file);
 }
 
 async function saveConfig(event) {
   event.preventDefault();
-  const settings = {
-    name: document.getElementById("cName").value,
-    initials: document.getElementById("cInitials").value,
-    whatsapp: document.getElementById("cWhatsapp").value,
-    phone: document.getElementById("cPhone").value,
-    instagram: document.getElementById("cInstagram").value,
-    address: document.getElementById("cAddress").value,
-    primary: document.getElementById("cPrimary").value,
-    accent: document.getElementById("cAccent").value,
-    description: document.getElementById("cDescription").value,
-    logo: document.getElementById("cLogo").value
-  };
+  const submit = event.submitter;
+  submit.disabled = true;
+  submit.textContent = selectedLogoFile ? "Enviando logotipo..." : "Salvando...";
   try {
+    const logo = selectedLogoFile ? await uploadBrandLogo(selectedLogoFile) : (currentSettings?.logo || DEF_SETTINGS.logo);
+    const settings = {
+      name: document.getElementById("cName").value.trim(),
+      whatsapp: document.getElementById("cWhatsapp").value,
+      phone: document.getElementById("cPhone").value,
+      instagram: document.getElementById("cInstagram").value,
+      address: document.getElementById("cAddress").value,
+      primary: document.getElementById("cPrimary").value,
+      accent: document.getElementById("cAccent").value,
+      description: document.getElementById("cDescription").value,
+      logo
+    };
     await saveSettings(settings);
+    currentSettings = settings;
+    selectedLogoFile = null;
+    document.getElementById("cLogoFile").value = "";
+    document.getElementById("cLogoPreview").src = settings.logo;
     applyBrand(settings);
     toast("Configurações salvas.");
   } catch (error) {
     console.error(error);
     toast(`Erro: ${error.message}`);
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Salvar configurações";
   }
 }
 

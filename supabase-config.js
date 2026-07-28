@@ -1,6 +1,6 @@
 window.SUPABASE_CONFIG = {
-  url: "COLE_AQUI_A_URL_DO_SUPABASE",
-  anonKey: "COLE_AQUI_A_CHAVE_ANON_DO_SUPABASE",
+  url: "https://dikbcpsbviovrceedccw.supabase.co",
+  anonKey: "sb_secret_aPvx8jw22n79Nuz8QFDxOA_rJ1pQBRa",
   storageBucket: "property-images",
   createUserFunction: "create-user"
 };

@@ -110,38 +110,175 @@ function openDetail(id) {
   const interestLink = wa(S.whatsapp, `Olá, quero informações sobre o imóvel ${property.code}: ${property.title}.`);
 
   document.getElementById("detailContent").innerHTML = `
-    <div class="detail-gallery"><img id="mainImg" src="${esc(images[0])}" alt="${esc(property.title)}"><div>${images.map(image => `<button data-img="${esc(image)}"><img src="${esc(image)}" alt="Foto do imóvel"></button>`).join("")}</div></div>
-    <div class="detail-grid">
-      <div>
-        <div class="detail-title-row"><span class="eyebrow">${esc(property.code)} · ${esc(property.purpose)}</span><span class="availability-badge static ${availabilityClass(property.availabilityStatus)}">${esc(property.availabilityStatus)}</span></div>
-        <h2>${esc(property.title)}</h2>
-        <p>${esc(property.address || "")} ${esc(property.neighborhood)} · ${esc(property.city)}</p>
-        <b class="detail-price">${money(property.price)}${property.purpose === "Aluguel" ? "<small>/mês</small>" : ""}</b>
-        ${property.condoFee ? `<p>Condomínio: ${money(property.condoFee)}</p>` : ""}
-        <div class="detail-facts">${property.area ? `<span>${property.area} m²</span>` : ""}${property.bedrooms ? `<span>${property.bedrooms} quartos</span>` : ""}${property.suites ? `<span>${property.suites} suítes</span>` : ""}${property.bathrooms ? `<span>${property.bathrooms} banheiros</span>` : ""}${property.parking ? `<span>${property.parking} vagas</span>` : ""}</div>
-        <p class="long">${esc(property.description)}</p>
-        <div class="checks">${property.pool ? "<span>✓ Piscina</span>" : ""}${property.financing ? "<span>✓ Aceita financiamento</span>" : ""}${property.condominium ? "<span>✓ Condomínio</span>" : ""}</div>
-        <div class="actions">
-          ${isAvailable ? `<a id="interest" class="btn primary" href="${interestLink}" target="_blank" rel="noopener">${WA_SVG} Tenho interesse</a>` : `<span class="unavailable-message">Este imóvel está ${esc(property.availabilityStatus.toLowerCase())}.</span>`}
-          <button id="share" class="btn outline">Compartilhar</button>
-          <a class="btn outline" href="${esc(S.instagram)}" target="_blank" rel="noopener">Instagram</a>
-        </div>
-      </div>
-      <aside>${property.video ? `<div class="media"><h3>Vídeo</h3><iframe src="${youtube(property.video)}" allowfullscreen></iframe></div>` : ""}${property.tour ? `<a class="media link" href="${esc(property.tour)}" target="_blank" rel="noopener">Abrir tour 360°</a>` : ""}
-      ${property.map ? `<div class="media"><h3>Localização</h3><iframe src="
-      ${normalizeGoogleMapsEmbed(property.map) ? `
-  <div class="media-box">
-    <h3>Localização</h3>
+  <div class="detail-gallery">
+    <img 
+      id="mainImg" 
+      src="${esc(images[0])}" 
+      alt="${esc(property.title)}">
 
-    <iframe
-      src="${escapeHtml(normalizeGoogleMapsEmbed(property.map))}"
-      loading="lazy"
-      allowfullscreen
-      referrerpolicy="strict-origin-when-cross-origin">
-    </iframe>
-  </div>` : ""}</aside>
+    <div>
+      ${images.map(image => `
+        <button data-img="${esc(image)}">
+          <img 
+            src="${esc(image)}" 
+            alt="Foto do imóvel">
+        </button>
+      `).join("")}
     </div>
-    ${similar.length ? `<div class="similar"><h3>Imóveis semelhantes</h3><div>${similar.map(item => `<button data-similar="${item.id}"><img src="${esc(item.images?.[0] || "")}" alt=""><span>${esc(item.title)}</span><b>${money(item.price)}</b></button>`).join("")}</div></div>` : ""}`;
+  </div>
+
+  <div class="detail-grid">
+    <div>
+
+      <div class="detail-title-row">
+        <span class="eyebrow">
+          ${esc(property.code)} · ${esc(property.purpose)}
+        </span>
+
+        <span class="availability-badge static ${availabilityClass(property.availabilityStatus)}">
+          ${esc(property.availabilityStatus)}
+        </span>
+      </div>
+
+      <h2>${esc(property.title)}</h2>
+
+      <p>
+        ${esc(property.address || "")}
+        ${esc(property.neighborhood)} ·
+        ${esc(property.city)}
+      </p>
+
+      <b class="detail-price">
+        ${money(property.price)}
+        ${property.purpose === "Aluguel" ? "<small>/mês</small>" : ""}
+      </b>
+
+      ${property.condoFee ? `
+        <p>Condomínio: ${money(property.condoFee)}</p>
+      ` : ""}
+
+      <div class="detail-facts">
+        ${property.area ? `<span>${property.area} m²</span>` : ""}
+        ${property.bedrooms ? `<span>${property.bedrooms} quartos</span>` : ""}
+        ${property.suites ? `<span>${property.suites} suítes</span>` : ""}
+        ${property.bathrooms ? `<span>${property.bathrooms} banheiros</span>` : ""}
+        ${property.parking ? `<span>${property.parking} vagas</span>` : ""}
+      </div>
+
+      <p class="long">
+        ${esc(property.description)}
+      </p>
+
+      <div class="checks">
+        ${property.pool ? "<span>✓ Piscina</span>" : ""}
+        ${property.financing ? "<span>✓ Aceita financiamento</span>" : ""}
+        ${property.condominium ? "<span>✓ Condomínio</span>" : ""}
+      </div>
+
+      <div class="actions">
+
+        ${isAvailable ? `
+          <a 
+            id="interest" 
+            class="btn primary" 
+            href="${interestLink}" 
+            target="_blank" 
+            rel="noopener">
+
+            ${WA_SVG} Tenho interesse
+          </a>
+        ` : `
+          <span class="unavailable-message">
+            Este imóvel está ${esc(property.availabilityStatus.toLowerCase())}.
+          </span>
+        `}
+
+        <button 
+          id="share" 
+          class="btn outline">
+          Compartilhar
+        </button>
+
+        <a 
+          class="btn outline" 
+          href="${esc(S.instagram)}" 
+          target="_blank" 
+          rel="noopener">
+          Instagram
+        </a>
+
+      </div>
+    </div>
+
+    <aside>
+
+      ${property.video ? `
+        <div class="media">
+          <h3>Vídeo</h3>
+
+          <iframe 
+            src="${youtube(property.video)}" 
+            allowfullscreen>
+          </iframe>
+        </div>
+      ` : ""}
+
+      ${property.tour ? `
+        <a 
+          class="media link" 
+          href="${esc(property.tour)}" 
+          target="_blank" 
+          rel="noopener">
+          Abrir tour 360°
+        </a>
+      ` : ""}
+
+      ${normalizeGoogleMapsEmbed(property.map) ? `
+        <div class="media">
+          <h3>Localização</h3>
+
+          <iframe
+            src="${esc(normalizeGoogleMapsEmbed(property.map))}"
+            loading="lazy"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin">
+          </iframe>
+
+        </div>
+      ` : ""}
+
+    </aside>
+
+  </div>
+
+  ${similar.length ? `
+    <div class="similar">
+
+      <h3>Imóveis semelhantes</h3>
+
+      <div>
+        ${similar.map(item => `
+          <button data-similar="${item.id}">
+
+            <img 
+              src="${esc(item.images?.[0] || "")}" 
+              alt="">
+
+            <span>
+              ${esc(item.title)}
+            </span>
+
+            <b>
+              ${money(item.price)}
+            </b>
+
+          </button>
+        `).join("")}
+      </div>
+
+    </div>
+  ` : ""}
+`;
 
   document.querySelector(".detail-gallery div").onclick = event => {
     const button = event.target.closest("[data-img]");

@@ -127,7 +127,19 @@ function openDetail(id) {
           <a class="btn outline" href="${esc(S.instagram)}" target="_blank" rel="noopener">Instagram</a>
         </div>
       </div>
-      <aside>${property.video ? `<div class="media"><h3>Vídeo</h3><iframe src="${youtube(property.video)}" allowfullscreen></iframe></div>` : ""}${property.tour ? `<a class="media link" href="${esc(property.tour)}" target="_blank" rel="noopener">Abrir tour 360°</a>` : ""}${property.map ? `<div class="media"><h3>Localização</h3><iframe src="${esc(property.map)}" loading="lazy"></iframe></div>` : ""}</aside>
+      <aside>${property.video ? `<div class="media"><h3>Vídeo</h3><iframe src="${youtube(property.video)}" allowfullscreen></iframe></div>` : ""}${property.tour ? `<a class="media link" href="${esc(property.tour)}" target="_blank" rel="noopener">Abrir tour 360°</a>` : ""}
+      ${property.map ? `<div class="media"><h3>Localização</h3><iframe src="
+      ${normalizeGoogleMapsEmbed(property.map) ? `
+  <div class="media-box">
+    <h3>Localização</h3>
+
+    <iframe
+      src="${escapeHtml(normalizeGoogleMapsEmbed(property.map))}"
+      loading="lazy"
+      allowfullscreen
+      referrerpolicy="strict-origin-when-cross-origin">
+    </iframe>
+  </div>` : ""}</aside>
     </div>
     ${similar.length ? `<div class="similar"><h3>Imóveis semelhantes</h3><div>${similar.map(item => `<button data-similar="${item.id}"><img src="${esc(item.images?.[0] || "")}" alt=""><span>${esc(item.title)}</span><b>${money(item.price)}</b></button>`).join("")}</div></div>` : ""}`;
 

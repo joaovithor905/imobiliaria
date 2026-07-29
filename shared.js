@@ -382,4 +382,31 @@ function youtube(url) {
   }
 }
 
+function normalizeGoogleMapsEmbed(value) {
+  if (!value) return "";
+
+  const input = value.trim();
+
+  // Caso o usuário cole o iframe inteiro
+  if (input.includes("<iframe")) {
+    const match = input.match(/src=["']([^"']+)["']/i);
+
+    if (match && match[1]) {
+      return match[1];
+    }
+
+    return "";
+  }
+
+  // Caso cole diretamente um link de incorporação
+  if (
+    input.includes("google.com/maps/embed") ||
+    input.includes("maps.google.com/maps/embed")
+  ) {
+    return input;
+  }
+
+  return "";
+}
+
 applyTheme(localStorage.getItem("primeLarTheme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));

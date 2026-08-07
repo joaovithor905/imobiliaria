@@ -1,83 +1,78 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json"
 };
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
-Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
 
   try {
-    const authorization = request.headers.get("Authorization");
-    if (!authorization) throw new Error("Sessão não informada.");
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authorization = req.headers.get("Authorization");
+    if (!authorization) return json({ error: "Sessão ausente." }, 401);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const callerClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authorization } } });
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
-
+    const callerClient = createClient(url, anon, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false } });
     const { data: authData, error: authError } = await callerClient.auth.getUser();
-    if (authError || !authData.user) throw new Error("Sessão inválida.");
+    if (authError || !authData.user) return json({ error: "Sessão inválida." }, 401);
+    const callerId = authData.user.id;
 
-    const { data: callerProfile, error: profileError } = await adminClient.from("profiles").select("role").eq("id", authData.user.id).single();
-    if (profileError || callerProfile?.role !== "admin") throw new Error("Apenas administradores podem gerenciar usuários.");
+    const { data: caller } = await callerClient.from("profiles").select("role,enabled").eq("id", callerId).single();
+    if (!caller || caller.role !== "admin" || caller.enabled === false) return json({ error: "Somente administradores ativos podem gerenciar usuários." }, 403);
 
-    const body = await request.json();
-    const { action, id } = body;
-    if (!id) throw new Error("Usuário não informado.");
-    if (["disable", "delete"].includes(action) && id === authData.user.id) throw new Error("Você não pode desabilitar ou excluir a própria conta.");
+    const body = await req.json();
+    const action = String(body.action || "");
+    const userId = String(body.userId || "");
+    if (!userId) return json({ error: "Usuário não informado." }, 400);
+    if (["delete", "toggle"].includes(action) && userId === callerId) return json({ error: "Você não pode excluir ou desabilitar a própria conta." }, 400);
+
+    const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
 
     if (action === "update") {
       const name = String(body.name || "").trim();
       const email = String(body.email || "").trim().toLowerCase();
-      const role = body.role;
+      const role = body.role === "admin" ? "admin" : "corretor";
       const password = String(body.password || "");
-      if (!name || !email) throw new Error("Nome e e-mail são obrigatórios.");
-      if (!["admin", "corretor"].includes(role)) throw new Error("Perfil inválido.");
-      if (id === authData.user.id && role !== "admin") throw new Error("Você não pode remover o próprio perfil de administrador.");
-      if (password && password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres.");
+      if (!name || !email) return json({ error: "Nome e e-mail são obrigatórios." }, 400);
+      if (password && password.length < 6) return json({ error: "A nova senha precisa ter pelo menos 6 caracteres." }, 400);
 
-      const attributes: Record<string, unknown> = {
-        email,
-        user_metadata: { name, role },
-      };
+      const attributes: any = { email, user_metadata: { name, role } };
       if (password) attributes.password = password;
-      const { data: updated, error: updateError } = await adminClient.auth.admin.updateUserById(id, attributes);
-      if (updateError) throw updateError;
+      const { error: authUpdateError } = await admin.auth.admin.updateUserById(userId, attributes);
+      if (authUpdateError) return json({ error: authUpdateError.message }, 400);
 
-      const { error: dbError } = await adminClient.from("profiles").update({ name, email, role }).eq("id", id);
-      if (dbError) throw dbError;
-      return json({ user: { id, name, email: updated.user.email || email, role } });
+      const { error: profileError } = await admin.from("profiles").update({ name, email, role }).eq("id", userId);
+      if (profileError) return json({ error: profileError.message }, 400);
+      return json({ ok: true });
     }
 
-    if (action === "disable" || action === "enable") {
-      const enabled = action === "enable";
-      const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(id, {
-        ban_duration: enabled ? "none" : "876000h",
+    if (action === "toggle") {
+      const enabled = Boolean(body.enabled);
+      const { error: authUpdateError } = await admin.auth.admin.updateUserById(userId, {
+        ban_duration: enabled ? "none" : "876000h"
       });
-      if (authUpdateError) throw authUpdateError;
-      const { data: profile, error: dbError } = await adminClient.from("profiles").update({ enabled }).eq("id", id).select("id,name,email,role,enabled").single();
-      if (dbError) throw dbError;
-      return json({ user: profile });
+      if (authUpdateError) return json({ error: authUpdateError.message }, 400);
+      const { error: profileError } = await admin.from("profiles").update({ enabled }).eq("id", userId);
+      if (profileError) return json({ error: profileError.message }, 400);
+      return json({ ok: true, enabled });
     }
 
     if (action === "delete") {
-      const { error: deleteError } = await adminClient.auth.admin.deleteUser(id);
-      if (deleteError) throw deleteError;
-      return json({ success: true });
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
     }
 
-    throw new Error("Ação inválida.");
+    return json({ error: "Ação inválida." }, 400);
   } catch (error) {
-    return json({ error: error.message || "Erro interno." }, 400);
+    console.error(error);
+    return json({ error: error instanceof Error ? error.message : "Erro interno." }, 500);
   }
 });
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-    status,
-  });
-}

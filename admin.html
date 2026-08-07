@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0f3d32">
-  <title>Painel | Prime Lar</title>
+  <title>Painel administrativo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
@@ -13,75 +13,58 @@
 <body class="admin-body">
   <section id="loginScreen" class="login-screen">
     <div class="login-card">
-      <a class="brand" href="index.html"><span class="brand-logo-shell"><img class="brand-logo" data-brand-logo src="assets/logo-prime-lar.png" alt="Logotipo Prime Lar"></span><span><strong>Prime Lar</strong><small>Painel administrativo</small></span></a>
+      <a class="brand" href="index.html"><span class="brand-logo-shell login-logo-shell"><img class="brand-logo" data-brand-logo alt="Logotipo"></span></a>
       <div><span class="eyebrow">Acesso restrito</span><h1>Entre no painel</h1><p>Use sua conta cadastrada no Supabase.</p></div>
       <form id="loginForm">
-        <label>E-mail<input id="loginEmail" type="email" required autocomplete="username" placeholder="admin@demo.com"></label>
-        <label>Senha<input id="loginPassword" type="password" required autocomplete="current-password" placeholder="admin123"></label>
+        <label>E-mail<input id="loginEmail" type="email" required autocomplete="username"></label>
+        <label>Senha<input id="loginPassword" type="password" required autocomplete="current-password"></label>
         <p id="loginError" class="error hidden">E-mail ou senha inválidos.</p>
         <button class="btn primary full">Entrar</button>
       </form>
-      <div class="demo"><b>Modo demonstração</b><span>Administrador: admin@demo.com / admin123</span><span>Corretor: corretor@demo.com / corretor123</span></div>
+      <div id="demoHint" class="demo hidden"></div>
       <a class="back-site" href="index.html">← Voltar ao site</a>
     </div>
   </section>
 
   <div id="adminApp" class="admin-app hidden">
-    <aside id="sidebar">
+    <button id="sidebarBackdrop" class="admin-backdrop" type="button" aria-label="Fechar menu"></button>
+    <aside id="sidebar" class="admin-sidebar">
       <div>
-        <a class="brand brand-admin" href="index.html"><span class="brand-logo-shell"><img class="brand-logo" data-brand-logo src="assets/logo-prime-lar.png" alt="Logotipo Prime Lar"></span><span><strong>Prime Lar</strong><small>Gestão imobiliária</small></span></a>
-        <nav class="admin-nav">
-          <button data-view="dashboard" class="active">Visão geral</button>
-          <button data-view="properties">Imóveis</button>
-          <button data-view="form">Novo imóvel</button>
-          <button data-view="users" class="admin-only">Usuários</button>
-          <button data-view="settings" class="admin-only">Configurações</button>
+        <a class="brand brand-admin" href="index.html"><span class="brand-logo-shell admin-logo-shell"><img class="brand-logo" data-brand-logo alt="Logotipo"></span></a>
+        <nav class="admin-nav" aria-label="Menu administrativo">
+          <button data-view="dashboard" class="active" type="button">Visão geral</button>
+          <button data-view="properties" type="button">Imóveis</button>
+          <button data-view="form" type="button">Novo imóvel</button>
+          <button data-view="users" class="admin-only" type="button">Usuários</button>
         </nav>
       </div>
-      <button id="logout" class="logout">Sair</button>
+      <button id="logout" class="logout" type="button">Sair</button>
     </aside>
 
     <main class="admin-main">
       <header class="admin-top">
-        <div><button id="sideBtn" class="icon mobile" aria-label="Abrir menu">☰</button><span id="roleLabel"></span><h1 id="viewTitle">Visão geral</h1></div>
-        <div class="actions"><button id="adminTheme" class="icon" aria-label="Alternar tema">◐</button><a class="btn outline" href="index.html" target="_blank">Ver site</a></div>
+        <div class="admin-top-title"><button id="sideBtn" class="icon mobile" type="button" aria-label="Abrir menu" aria-expanded="false">☰</button><div><span id="roleLabel"></span><h1 id="viewTitle">Visão geral</h1></div></div>
+        <div class="actions"><button id="adminTheme" class="icon js-theme-toggle" type="button" aria-label="Alternar tema">◐</button><a class="btn outline" href="index.html" target="_blank" rel="noopener">Ver site</a></div>
       </header>
 
       <section id="dashboardView" class="admin-view">
-        <div class="stats">
-          <article><span>Disponíveis</span><strong id="sActive">0</strong></article>
-          <article><span>Alugados/Vendidos</span><strong id="sUnavailable">0</strong></article>
-          <article><span>Visualizações</span><strong id="sViews">0</strong></article>
-          <article><span>Cliques WhatsApp</span><strong id="sClicks">0</strong></article>
-        </div>
-        <div class="dashboard-grid">
-          <article class="panel"><h2>Imóveis mais acessados</h2><div id="ranking"></div></article>
-          <article class="panel"><h2>Resumo de desempenho</h2><div id="simpleChart" class="simple-chart"></div></article>
-        </div>
+        <div class="stats"><article><span>Disponíveis</span><strong id="sActive">0</strong></article><article><span>Alugados/Vendidos</span><strong id="sUnavailable">0</strong></article><article><span>Visualizações</span><strong id="sViews">0</strong></article><article><span>Cliques WhatsApp</span><strong id="sClicks">0</strong></article></div>
+        <div class="dashboard-grid"><article class="panel"><h2>Imóveis mais acessados</h2><div id="ranking"></div></article><article class="panel"><h2>Resumo de desempenho</h2><div id="simpleChart" class="simple-chart"></div></article></div>
       </section>
 
-      <section id="propertiesView" class="admin-view hidden">
-        <div class="panel">
-          <div class="panel-head"><div><h2>Imóveis cadastrados</h2><p>Altere a disponibilidade, edite, destaque ou exclua anúncios.</p></div><button data-new class="btn primary">Novo imóvel</button></div>
-          <div class="admin-toolbar">
-            <input id="adminSearch" placeholder="Buscar por título, bairro ou código">
-            <select id="statusFilter"><option value="">Todas as disponibilidades</option><option value="Disponível">Disponível</option><option value="Alugado">Alugado</option><option value="Vendido">Vendido</option><option value="Reservado">Reservado</option></select>
-          </div>
-          <div id="adminList"></div>
-        </div>
-      </section>
+      <section id="propertiesView" class="admin-view hidden"><div class="panel"><div class="panel-head"><div><h2>Imóveis cadastrados</h2><p>Altere disponibilidade, visibilidade, destaque ou edite anúncios.</p></div><button data-new class="btn primary" type="button">Novo imóvel</button></div><div class="admin-toolbar"><input id="adminSearch" placeholder="Buscar por título, bairro ou código"><select id="statusFilter"><option value="">Todas as disponibilidades</option></select></div><div id="adminList"></div></div></section>
 
       <section id="formView" class="admin-view hidden">
         <form id="propertyForm" class="panel property-form">
           <input id="pId" type="hidden">
-          <div class="panel-head"><div><h2 id="formTitle">Cadastrar imóvel</h2><p>O código será criado automaticamente ao salvar.</p></div></div>
+          <div class="panel-head"><div><h2 id="formTitle">Cadastrar imóvel</h2><p>O código é criado automaticamente pelo banco.</p></div></div>
           <h3>Informações principais</h3>
           <div class="form-grid">
             <label class="span2">Título<input id="pTitle" required></label>
             <label>Código<input id="pCode" readonly placeholder="Gerado automaticamente"></label>
             <label>Finalidade<select id="pPurpose"><option>Venda</option><option>Aluguel</option></select></label>
-            <label>Disponibilidade<select id="pAvailability"><option value="Disponível">Disponível</option><option value="Alugado">Alugado</option><option value="Vendido">Vendido</option><option value="Reservado">Reservado</option></select></label>
-            <label>Tipo<select id="pType"><option>Casa</option><option>Apartamento</option><option>Terreno</option><option>Comercial</option><option>Rural</option></select></label>
+            <label>Disponibilidade<select id="pAvailability"></select></label>
+            <label>Tipo<select id="pType"></select></label>
             <label>Preço<input id="pPrice" type="number" min="0" step="0.01" required></label>
             <label>Condomínio<input id="pCondoFee" type="number" min="0" step="0.01"></label>
             <label>Cidade<input id="pCity" required></label>
@@ -91,33 +74,17 @@
           </div>
 
           <h3>Características</h3>
-          <div class="form-grid">
-            <label>Área (m²)<input id="pArea" type="number" min="0"></label>
-            <label>Quartos<input id="pBedrooms" type="number" min="0"></label>
-            <label>Suítes<input id="pSuites" type="number" min="0"></label>
-            <label>Banheiros<input id="pBathrooms" type="number" min="0"></label>
-            <label>Vagas<input id="pParking" type="number" min="0"></label>
-            <label>Andar<input id="pFloor" type="number" min="0"></label>
-          </div>
-          <div class="checks">
-            <label><input id="pPool" type="checkbox"> Piscina</label>
-            <label><input id="pFinancing" type="checkbox"> Financiamento</label>
-            <label><input id="pCondominium" type="checkbox"> Condomínio</label>
-            <label><input id="pFeatured" type="checkbox"> Destaque</label>
-            <label><input id="pActive" type="checkbox" checked> Exibir no site</label>
-          </div>
+          <div class="form-grid"><label>Área (m²)<input id="pArea" type="number" min="0" step="0.01"></label><label>Quartos<input id="pBedrooms" type="number" min="0"></label><label>Suítes<input id="pSuites" type="number" min="0"></label><label>Banheiros<input id="pBathrooms" type="number" min="0"></label><label>Vagas<input id="pParking" type="number" min="0"></label><label>Andar<input id="pFloor" type="number" min="0"></label></div>
+          <div class="checks"><label><input id="pPool" type="checkbox"> Piscina</label><label><input id="pFinancing" type="checkbox"> Financiamento</label><label><input id="pCondominium" type="checkbox"> Condomínio</label><label><input id="pFeatured" type="checkbox"> Destaque</label><label><input id="pActive" type="checkbox" checked> Exibir no site</label></div>
+
+          <h3>Localização exata</h3>
+          <div class="form-grid"><label>Latitude<input id="pLatitude" type="number" step="any" placeholder="-17.7923"></label><label>Longitude<input id="pLongitude" type="number" step="any" placeholder="-50.9192"></label></div>
+          <p class="helper">No Google Maps, clique com o botão direito sobre o imóvel e copie as coordenadas. O site exibirá um pino e um botão para traçar rota.</p>
 
           <h3>Imagens e mídia</h3>
-          <div id="dropZone" class="drop-zone">
-            <input id="pImages" type="file" accept="image/*" multiple hidden>
-            <b>Arraste várias fotos aqui</b><span>ou clique para selecionar uma ou mais imagens</span>
-          </div>
+          <div id="dropZone" class="drop-zone"><input id="pImages" type="file" accept="image/*" multiple hidden><b>Arraste várias fotos aqui</b><span>ou clique para selecionar uma ou mais imagens</span></div>
           <div id="preview" class="preview"></div>
-          <div class="form-grid">
-            <label>Vídeo (YouTube/URL)<input id="pVideo" type="url"></label>
-            <label>Tour 360°<input id="pTour" type="url"></label>
-            <label class="span2">Google Maps (embed/link)<input id="pMap"></label>
-          </div>
+          <div class="form-grid"><label>Vídeo (YouTube/URL)<input id="pVideo" type="url"></label><label>Tour 360°<input id="pTour" type="url"></label></div>
           <div class="actions"><button class="btn primary">Salvar imóvel</button><button id="cancelEdit" type="button" class="btn outline">Cancelar</button></div>
         </form>
       </section>
@@ -125,63 +92,19 @@
       <section id="usersView" class="admin-view hidden admin-only">
         <div class="panel">
           <div class="panel-head"><div><h2>Usuários</h2><p>Crie, edite, desabilite temporariamente ou exclua acessos.</p></div></div>
-          <form id="userForm" class="user-create-form">
-            <label>Nome<input id="uName" required placeholder="Nome do corretor"></label>
-            <label>E-mail<input id="uEmail" type="email" required placeholder="corretor@email.com"></label>
-            <label>Senha temporária<input id="uPassword" type="password" minlength="6" required placeholder="Mínimo de 6 caracteres"></label>
-            <label>Perfil<select id="uRole"><option value="corretor">Corretor</option><option value="admin">Administrador</option></select></label>
-            <button class="btn primary">Criar usuário</button>
-          </form>
+          <form id="userForm" class="user-create-form"><label>Nome<input id="uName" required></label><label>E-mail<input id="uEmail" type="email" required></label><label>Senha temporária<input id="uPassword" type="password" minlength="6" required></label><label>Perfil<select id="uRole"><option value="corretor">Corretor</option><option value="admin">Administrador</option></select></label><button class="btn primary">Criar usuário</button></form>
           <p id="userFormMessage" class="helper"></p>
           <div id="userList"></div>
         </div>
       </section>
-
-      <section id="settingsView" class="admin-view hidden admin-only">
-        <form id="settingsForm" class="panel">
-          <h2>Configurações do site</h2>
-          <div class="form-grid">
-            <label>Nome<input id="cName"></label><label>WhatsApp<input id="cWhatsapp"></label>
-            <label>Telefone exibido<input id="cPhone"></label><label>Instagram<input id="cInstagram"></label>
-            <label>Cidade/Endereço<input id="cAddress"></label><label>Cor principal<input id="cPrimary" type="color"></label>
-            <label>Cor de destaque<input id="cAccent" type="color"></label>
-            <label class="span2">Descrição<textarea id="cDescription"></textarea></label>
-            <div class="span2 logo-setting">
-              <span class="setting-label">Logotipo da empresa</span>
-              <div class="logo-upload-card">
-                <div class="logo-preview-box"><img id="cLogoPreview" src="assets/logo-prime-lar.png" alt="Prévia do logotipo"></div>
-                <div>
-                  <input id="cLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml">
-                  <small>Selecione uma imagem do computador. Recomendado: PNG ou SVG com fundo transparente.</small>
-                </div>
-              </div>
-            </div>
-          </div>
-          <button class="btn primary">Salvar configurações</button>
-        </form>
-      </section>
     </main>
   </div>
 
+  <dialog id="userDialog" class="user-dialog"><form id="editUserForm" method="dialog"><div class="dialog-heading"><div><span class="eyebrow">Gerenciar acesso</span><h2>Editar usuário</h2></div><button id="closeUserDialog" type="button" class="dialog-x" aria-label="Fechar">×</button></div><input id="editUserId" type="hidden"><label>Nome<input id="editUserName" required></label><label>E-mail<input id="editUserEmail" type="email" required></label><label>Perfil<select id="editUserRole"><option value="corretor">Corretor</option><option value="admin">Administrador</option></select></label><label>Nova senha <small>(opcional)</small><input id="editUserPassword" type="password" minlength="6"></label><div class="actions"><button class="btn primary">Salvar alterações</button><button id="cancelUserEdit" type="button" class="btn outline">Cancelar</button></div></form></dialog>
 
-  <dialog id="userDialog" class="user-dialog">
-    <form id="editUserForm" method="dialog">
-      <div class="dialog-heading">
-        <div><span class="eyebrow">Gerenciar acesso</span><h2>Editar usuário</h2></div>
-        <button id="closeUserDialog" type="button" class="dialog-x" aria-label="Fechar">×</button>
-      </div>
-      <input id="editUserId" type="hidden">
-      <label>Nome<input id="editUserName" required></label>
-      <label>E-mail<input id="editUserEmail" type="email" required></label>
-      <label>Perfil<select id="editUserRole"><option value="corretor">Corretor</option><option value="admin">Administrador</option></select></label>
-      <label>Nova senha <small>(opcional)</small><input id="editUserPassword" type="password" minlength="6" placeholder="Deixe vazio para manter a atual"></label>
-      <div class="actions"><button class="btn primary">Salvar alterações</button><button id="cancelUserEdit" type="button" class="btn outline">Cancelar</button></div>
-    </form>
-  </dialog>
-
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
+  <script src="config.js"></script>
   <script src="shared.js"></script>
   <script src="admin.js"></script>
 </body>

@@ -1,75 +1,58 @@
+"use strict";
+
+const CONFIG = window.APP_CONFIG || {};
+const APP = CONFIG.app || {};
+const BRAND = CONFIG.brand || {};
+const CONTACT = CONFIG.contact || {};
+const SEO = CONFIG.seo || {};
+const SB = CONFIG.supabase || {};
+const PROPERTY_CONFIG = CONFIG.properties || {};
+const MAP_CONFIG = CONFIG.map || {};
+const DEMO = CONFIG.demo || {};
+
+const WA_SVG = `<svg class="social-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.52 3.48A11.82 11.82 0 0 0 12.07 0C5.54 0 .23 5.31.23 11.84c0 2.09.55 4.13 1.6 5.92L.13 24l6.39-1.68a11.8 11.8 0 0 0 5.54 1.41h.01c6.52 0 11.83-5.31 11.83-11.84 0-3.16-1.2-6.14-3.38-8.41Zm-8.45 18.25h-.01a9.8 9.8 0 0 1-5-1.37l-.36-.21-3.79.99 1.01-3.69-.23-.38a9.82 9.82 0 1 1 8.38 4.66Zm5.39-7.36c-.29-.15-1.74-.86-2.01-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-1.72-.86-2.85-1.54-4-3.5-.3-.52.3-.48.86-1.6.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.91-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.74-.71 1.99-1.4.25-.69.25-1.28.17-1.4-.07-.13-.27-.2-.57-.35Z"/></svg>`;
+const IG_SVG = `<svg class="social-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 2A3.75 3.75 0 0 0 4 7.75v8.5A3.75 3.75 0 0 0 7.75 20h8.5A3.75 3.75 0 0 0 20 16.25v-8.5A3.75 3.75 0 0 0 16.25 4h-8.5Zm8.75 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>`;
+
+const NS = APP.storageNamespace || "primeLarPro";
 const K = {
-  properties: "primeLarV2Properties",
-  settings: "primeLarV2Settings",
-  analytics: "primeLarV2Analytics",
-  users: "primeLarV2Users",
-  session: "primeLarV2Session"
+  properties: `${NS}:properties`,
+  analytics: `${NS}:analytics`,
+  users: `${NS}:users`,
+  session: `${NS}:session`,
+  theme: `${NS}:theme`
 };
 
-const DEF_SETTINGS = {
-  name: "Prime Lar",
-  whatsapp: "5564999999999",
-  phone: "(64) 99999-9999",
-  instagram: "https://instagram.com/",
-  address: "Rio Verde - GO",
-  description: "Imóveis para venda e aluguel com atendimento simples e próximo.",
-  primary: "#0f3d32",
-  accent: "#c89b5b",
-  logo: "assets/logo-prime-lar.png"
-};
-
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85";
 const DEF_PROPERTIES = [
   {
-    id: crypto.randomUUID(), code: "IMV-00001", title: "Casa contemporânea com área gourmet",
+    id: crypto.randomUUID(), code: `${PROPERTY_CONFIG.codePrefix || "IMV"}-00001`, title: "Casa contemporânea com área gourmet",
     purpose: "Venda", availabilityStatus: "Disponível", type: "Casa", price: 780000, condoFee: 0,
-    city: "Rio Verde", neighborhood: "Jardim América", address: "Rua das Palmeiras",
+    city: "Rio Verde", neighborhood: "Jardim América", address: "",
     description: "Casa moderna com ambientes integrados, suíte ampla, cozinha planejada e área gourmet completa.",
     area: 220, bedrooms: 3, suites: 1, bathrooms: 3, parking: 2, floor: 0,
     pool: true, financing: true, condominium: false, featured: true, active: true,
-    images: [
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=85",
-      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=85",
-      "https://images.unsplash.com/photo-1600585152915-d208bec867a1?auto=format&fit=crop&w=1400&q=85"
-    ],
-    video: "", tour: "", map: "https://www.google.com/maps?q=Rio+Verde+GO&output=embed",
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString()
-  },
-  {
-    id: crypto.randomUUID(), code: "IMV-00002", title: "Apartamento completo próximo ao centro",
-    purpose: "Aluguel", availabilityStatus: "Disponível", type: "Apartamento", price: 2350, condoFee: 420,
-    city: "Rio Verde", neighborhood: "Setor Central", address: "Avenida Presidente Vargas",
-    description: "Apartamento bem localizado, com varanda, armários planejados e condomínio com área de lazer.",
-    area: 95, bedrooms: 2, suites: 1, bathrooms: 2, parking: 1, floor: 6,
-    pool: true, financing: false, condominium: true, featured: true, active: true,
-    images: [
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1400&q=85",
-      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1400&q=85"
-    ],
-    video: "", tour: "", map: "https://www.google.com/maps?q=Centro+Rio+Verde+GO&output=embed",
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+    images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=85"],
+    video: "", tour: "", latitude: -17.7923, longitude: -50.9192, createdAt: new Date().toISOString()
   }
 ];
 
-const DEF_USERS = [
-  { id: "demo-admin", name: "Administrador Demo", email: "admin@demo.com", password: "admin123", role: "admin", enabled: true, createdAt: new Date().toISOString() },
-  { id: "demo-corretor", name: "Corretor Demo", email: "corretor@demo.com", password: "corretor123", role: "corretor", enabled: true, createdAt: new Date().toISOString() }
-];
-
-function hasSupabaseConfig() {
-  const c = window.SUPABASE_CONFIG || {};
-  return Boolean(c.url && c.anonKey && !c.url.includes("COLE_AQUI") && !c.anonKey.includes("COLE_AQUI"));
+function isSupabaseConfigured() {
+  const url = String(SB.url || "");
+  const key = String(SB.publishableKey || "");
+  return Boolean(url && key && !url.includes("COLE_AQUI") && !key.includes("COLE_AQUI"));
 }
 
-const db = hasSupabaseConfig() && window.supabase
-  ? window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey)
+const db = isSupabaseConfigured() && window.supabase
+  ? window.supabase.createClient(SB.url, SB.publishableKey)
   : null;
 
 function localGet(key, fallback) {
   try {
-    const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(key, JSON.stringify(fallback));
-    return structuredClone(fallback);
+    const value = localStorage.getItem(key);
+    if (value !== null) return JSON.parse(value);
+    const clone = structuredClone(fallback);
+    localStorage.setItem(key, JSON.stringify(clone));
+    return clone;
   } catch {
     return structuredClone(fallback);
   }
@@ -80,86 +63,114 @@ function localSet(key, value) {
 }
 
 function esc(value) {
-  const div = document.createElement("div");
-  div.textContent = value ?? "";
-  return div.innerHTML;
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function money(value) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value || 0));
+  return new Intl.NumberFormat(APP.locale || "pt-BR", {
+    style: "currency",
+    currency: APP.currency || "BRL"
+  }).format(Number(value || 0));
 }
 
 function wa(number, message) {
-  return `https://wa.me/${String(number || "").replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${String(number || "").replace(/\D/g, "")}?text=${encodeURIComponent(message || "")}`;
 }
 
-function toast(message) {
+function googleRoute(latitude, longitude) {
+  if (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) return "";
+  return `${MAP_CONFIG.googleRouteBaseUrl || "https://www.google.com/maps/dir/?api=1&destination="}${Number(latitude)},${Number(longitude)}`;
+}
+
+function youtube(url) {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    let id = "";
+    if (parsed.hostname.includes("youtu.be")) id = parsed.pathname.replace(/^\//, "");
+    if (parsed.hostname.includes("youtube.com")) id = parsed.searchParams.get("v") || parsed.pathname.split("/").filter(Boolean).pop();
+    return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : url;
+  } catch {
+    return url;
+  }
+}
+
+function toast(message, isError = false) {
   const element = document.getElementById("toast");
   if (!element) return;
   element.textContent = message;
-  element.classList.remove("hidden");
+  element.className = `toast${isError ? " error" : ""}`;
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => element.classList.add("hidden"), 3200);
+  toast.timer = setTimeout(() => { element.className = "toast hidden"; }, 3300);
+}
+
+function initializeTheme() {
+  const saved = localStorage.getItem(K.theme);
+  const initial = saved || APP.defaultTheme || "light";
+  applyTheme(initial);
 }
 
 function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  localStorage.setItem("primeLarTheme", theme);
+  document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+  localStorage.setItem(K.theme, document.documentElement.dataset.theme);
 }
 
 function toggleTheme() {
+  if (APP.allowThemeToggle === false) return;
   applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
 }
 
-function applyBrand(settings) {
-  document.documentElement.style.setProperty("--primary", settings.primary || DEF_SETTINGS.primary);
-  document.documentElement.style.setProperty("--accent", settings.accent || DEF_SETTINGS.accent);
-  document.querySelectorAll("[data-brand-name]").forEach(el => el.textContent = settings.name);
+function applyConfigToPage() {
+  const name = APP.name || "Imobiliária";
+  const label = APP.businessLabel || "Imobiliária";
+  document.documentElement.style.setProperty("--primary", BRAND.primary || "#0f3d32");
+  document.documentElement.style.setProperty("--accent", BRAND.accent || "#c89b5b");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", BRAND.themeColor || BRAND.primary || "#0f3d32");
+  if (SEO.title) document.title = SEO.title;
+  document.querySelector('meta[name="description"]')?.setAttribute("content", SEO.description || "");
+
+  document.querySelectorAll("[data-brand-name]").forEach(el => { el.textContent = name; });
   document.querySelectorAll("[data-brand-logo]").forEach(el => {
-    el.src = settings.logo || DEF_SETTINGS.logo;
-    el.alt = `Logotipo ${settings.name || DEF_SETTINGS.name}`;
+    el.src = APP.logo || "assets/logo-prime-lar.png";
+    el.alt = `Logotipo ${name}`;
   });
-  document.querySelectorAll("[data-description]").forEach(el => el.textContent = settings.description);
-  document.querySelectorAll("[data-phone]").forEach(el => el.textContent = settings.phone);
-  document.querySelectorAll("[data-address]").forEach(el => el.textContent = settings.address);
-  document.querySelectorAll("[data-instagram]").forEach(el => el.href = settings.instagram || "#");
+  document.querySelectorAll("[data-description]").forEach(el => { el.textContent = SEO.description || ""; });
+  document.querySelectorAll("[data-phone]").forEach(el => { el.textContent = CONTACT.phone || ""; });
+  document.querySelectorAll("[data-address]").forEach(el => { el.textContent = CONTACT.address || ""; });
+  document.querySelectorAll("[data-instagram]").forEach(el => { el.href = CONTACT.instagram || "#"; });
+  document.querySelectorAll("[data-instagram-label]").forEach(el => { el.textContent = CONTACT.instagramLabel || "Instagram"; });
+  document.querySelectorAll("[data-whatsapp-icon]").forEach(el => { el.innerHTML = WA_SVG; });
+  document.querySelectorAll("[data-instagram-icon]").forEach(el => { el.innerHTML = IG_SVG; });
+  document.querySelectorAll(".js-whatsapp").forEach(el => {
+    el.href = wa(CONTACT.whatsapp, CONTACT.whatsappMessage || "Olá, vim pelo site.");
+  });
+
+  document.querySelectorAll(".js-theme-toggle").forEach(el => {
+    if (APP.allowThemeToggle === false) el.classList.add("hidden");
+  });
+
+  if (document.body.classList.contains("admin-body")) document.title = `Painel | ${name}`;
+  document.querySelectorAll("[data-business-label]").forEach(el => { el.textContent = label; });
 }
 
-async function getSettings() {
-  if (db) {
-    const { data, error } = await db.from("site_settings").select("*").eq("id", 1).maybeSingle();
-    if (!error && data) return mapSettingsFromDb(data);
-  }
-  return localGet(K.settings, DEF_SETTINGS);
-}
-
-async function saveSettings(settings) {
-  if (db) {
-    const { error } = await db.from("site_settings").upsert(mapSettingsToDb(settings));
-    if (!error) return settings;
-    throw new Error(error.message);
-  }
-  localSet(K.settings, settings);
-  return settings;
-}
-
-function mapSettingsFromDb(s) {
-  return { name: s.name, whatsapp: s.whatsapp, phone: s.phone, instagram: s.instagram,
-    address: s.address, description: s.description, primary: s.primary_color, accent: s.accent_color,
-    logo: s.logo_url || DEF_SETTINGS.logo };
-}
-
-function mapSettingsToDb(s) {
-  return { id: 1, name: s.name, whatsapp: s.whatsapp, phone: s.phone,
-    instagram: s.instagram, address: s.address, description: s.description, primary_color: s.primary,
-    accent_color: s.accent, logo_url: s.logo || DEF_SETTINGS.logo, updated_at: new Date().toISOString() };
+function fillConfiguredSelect(select, values, placeholder = null) {
+  if (!select) return;
+  const previous = select.value;
+  select.innerHTML = placeholder !== null ? `<option value="">${esc(placeholder)}</option>` : "";
+  (values || []).forEach(value => select.insertAdjacentHTML("beforeend", `<option value="${esc(value)}">${esc(value)}</option>`));
+  if ([...select.options].some(option => option.value === previous)) select.value = previous;
 }
 
 async function getProperties() {
   if (db) {
     const { data, error } = await db.from("properties").select("*").order("created_at", { ascending: false });
-    if (!error && data) return data.map(mapPropertyFromDb);
-    console.error("Erro ao carregar imóveis:", error);
+    if (error) throw new Error(error.message);
+    return (data || []).map(mapPropertyFromDb);
   }
   return localGet(K.properties, DEF_PROPERTIES);
 }
@@ -171,7 +182,11 @@ async function saveProperty(property) {
       if (error) throw new Error(error.message);
       return mapPropertyFromDb(data);
     }
-    const { data, error } = await db.from("properties").insert(mapPropertyToDb(property, true)).select().single();
+    const { data: generatedCode, error: codeError } = await db.rpc("next_property_code", { p_prefix: PROPERTY_CONFIG.codePrefix || "IMV" });
+    if (codeError) throw new Error(codeError.message);
+    const payload = mapPropertyToDb({ ...property, code: generatedCode }, true);
+    payload.code = generatedCode;
+    const { data, error } = await db.from("properties").insert(payload).select().single();
     if (error) throw new Error(error.message);
     return mapPropertyFromDb(data);
   }
@@ -181,6 +196,7 @@ async function saveProperty(property) {
   if (!saved.id) {
     saved.id = crypto.randomUUID();
     saved.code = nextLocalPropertyCode(list);
+    saved.createdAt = saved.createdAt || new Date().toISOString();
   }
   const index = list.findIndex(item => item.id === saved.id);
   if (index >= 0) list[index] = saved; else list.unshift(saved);
@@ -198,37 +214,35 @@ async function removeProperty(id) {
 }
 
 function nextLocalPropertyCode(list) {
-  const highest = list.reduce((max, item) => {
-    const number = Number(String(item.code || "").match(/(\d+)$/)?.[1] || 0);
-    return Math.max(max, number);
-  }, 0);
-  return `IMV-${String(highest + 1).padStart(5, "0")}`;
+  const highest = list.reduce((max, item) => Math.max(max, Number(String(item.code || "").match(/(\d+)$/)?.[1] || 0)), 0);
+  return `${PROPERTY_CONFIG.codePrefix || "IMV"}-${String(highest + 1).padStart(5, "0")}`;
 }
 
 function mapPropertyFromDb(p) {
   return {
     id: p.id, code: p.code, title: p.title, purpose: p.purpose,
-    availabilityStatus: p.availability_status || "Disponível", type: p.type, price: Number(p.price),
+    availabilityStatus: p.availability_status || "Disponível", type: p.type, price: Number(p.price || 0),
     condoFee: Number(p.condo_fee || 0), city: p.city, neighborhood: p.neighborhood, address: p.address || "",
-    description: p.description, area: Number(p.area || 0), bedrooms: Number(p.bedrooms || 0),
-    suites: Number(p.suites || 0), bathrooms: Number(p.bathrooms || 0), parking: Number(p.parking || 0),
-    floor: Number(p.floor || 0), pool: Boolean(p.pool), financing: Boolean(p.financing),
-    condominium: Boolean(p.condominium), featured: Boolean(p.featured), active: Boolean(p.active),
-    images: Array.isArray(p.images) ? p.images : [], video: p.video || "", tour: p.tour || "", map: p.map || "",
-    createdAt: p.created_at
+    description: p.description || "", area: Number(p.area || 0), bedrooms: Number(p.bedrooms || 0), suites: Number(p.suites || 0),
+    bathrooms: Number(p.bathrooms || 0), parking: Number(p.parking || 0), floor: Number(p.floor || 0),
+    pool: Boolean(p.pool), financing: Boolean(p.financing), condominium: Boolean(p.condominium), featured: Boolean(p.featured), active: Boolean(p.active),
+    images: Array.isArray(p.images) ? p.images : [], video: p.video || "", tour: p.tour || "",
+    latitude: p.latitude === null || p.latitude === undefined ? null : Number(p.latitude),
+    longitude: p.longitude === null || p.longitude === undefined ? null : Number(p.longitude),
+    createdAt: p.created_at, updatedAt: p.updated_at
   };
 }
 
 function mapPropertyToDb(p, isInsert) {
   const payload = {
-    title: p.title, purpose: p.purpose, availability_status: p.availabilityStatus || "Disponível",
-    type: p.type, price: p.price, condo_fee: p.condoFee || 0, city: p.city,
-    neighborhood: p.neighborhood, address: p.address || "", description: p.description,
-    area: p.area || 0, bedrooms: p.bedrooms || 0, suites: p.suites || 0,
-    bathrooms: p.bathrooms || 0, parking: p.parking || 0, floor: p.floor || 0,
-    pool: Boolean(p.pool), financing: Boolean(p.financing), condominium: Boolean(p.condominium),
-    featured: Boolean(p.featured), active: Boolean(p.active), images: p.images || [],
-    video: p.video || "", tour: p.tour || "", map: p.map || ""
+    title: p.title, purpose: p.purpose, availability_status: p.availabilityStatus || "Disponível", type: p.type,
+    price: Number(p.price || 0), condo_fee: Number(p.condoFee || 0), city: p.city, neighborhood: p.neighborhood,
+    address: p.address || "", description: p.description || "", area: Number(p.area || 0), bedrooms: Number(p.bedrooms || 0),
+    suites: Number(p.suites || 0), bathrooms: Number(p.bathrooms || 0), parking: Number(p.parking || 0), floor: Number(p.floor || 0),
+    pool: Boolean(p.pool), financing: Boolean(p.financing), condominium: Boolean(p.condominium), featured: Boolean(p.featured), active: Boolean(p.active),
+    images: p.images || [], video: p.video || "", tour: p.tour || "",
+    latitude: Number.isFinite(Number(p.latitude)) ? Number(p.latitude) : null,
+    longitude: Number.isFinite(Number(p.longitude)) ? Number(p.longitude) : null
   };
   if (!isInsert && p.code) payload.code = p.code;
   return payload;
@@ -236,6 +250,14 @@ function mapPropertyToDb(p, isInsert) {
 
 async function uploadPropertyImages(files) {
   if (!files.length) return [];
+  const maxCount = Number(APP.maxImagesPerProperty || 15);
+  const maxMB = Number(APP.maxImageSizeMB || 8);
+  if (files.length > maxCount) throw new Error(`Selecione no máximo ${maxCount} imagens por vez.`);
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) throw new Error("Envie apenas arquivos de imagem.");
+    if (file.size > maxMB * 1024 * 1024) throw new Error(`A imagem ${file.name} ultrapassa ${maxMB} MB.`);
+  }
+
   if (!db) {
     return Promise.all(files.map(file => new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -246,110 +268,69 @@ async function uploadPropertyImages(files) {
   }
 
   const urls = [];
+  const bucket = SB.propertyImagesBucket || "property-images";
   for (const file of files) {
-    const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]/g, "-");
+    const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
     const path = `${new Date().getFullYear()}/${crypto.randomUUID()}-${safeName}`;
-    const { error } = await db.storage.from(window.SUPABASE_CONFIG.storageBucket).upload(path, file, { cacheControl: "3600", upsert: false });
+    const { error } = await db.storage.from(bucket).upload(path, file, { cacheControl: "3600", upsert: false });
     if (error) throw new Error(`Falha ao enviar ${file.name}: ${error.message}`);
-    const { data } = db.storage.from(window.SUPABASE_CONFIG.storageBucket).getPublicUrl(path);
+    const { data } = db.storage.from(bucket).getPublicUrl(path);
     urls.push(data.publicUrl);
   }
   return urls;
 }
 
-async function uploadBrandLogo(file) {
-  if (!file) return "";
-  if (!file.type.startsWith("image/") && file.type !== "image/svg+xml") throw new Error("Selecione um arquivo de imagem válido.");
-  if (file.size > 5 * 1024 * 1024) throw new Error("O logotipo deve ter no máximo 5 MB.");
-
-  if (!db) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  const bucket = window.SUPABASE_CONFIG.logoBucket || "site-assets";
-  const extension = file.name.split(".").pop()?.toLowerCase() || "png";
-  const path = `branding/logo-${Date.now()}.${extension}`;
-  const { error } = await db.storage.from(bucket).upload(path, file, { cacheControl: "3600", upsert: false });
-  if (error) throw new Error(`Falha ao enviar o logotipo: ${error.message}`);
-  const { data } = db.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
-}
-
 async function getProfiles() {
   if (db) {
-    const { data, error } = await db.from("profiles").select("id,name,email,role,enabled,created_at").order("created_at", { ascending: false });
+    const { data, error } = await db.from("profiles").select("id,name,email,role,enabled,created_at").order("name");
     if (error) throw new Error(error.message);
-    return data.map(p => ({ id: p.id, name: p.name, email: p.email, role: p.role, enabled: p.enabled !== false, createdAt: p.created_at }));
+    return (data || []).map(p => ({ id: p.id, name: p.name, email: p.email, role: p.role, enabled: p.enabled !== false, createdAt: p.created_at }));
   }
-  return localGet(K.users, DEF_USERS).map(user => ({ ...user, enabled: user.enabled !== false }));
+  return localGet(K.users, DEMO.accounts || []).map(user => ({ ...user, enabled: user.enabled !== false }));
 }
 
-async function createUserAccount({ name, email, password, role }) {
+async function createUser(payload) {
   if (db) {
-    const { data, error } = await db.functions.invoke(window.SUPABASE_CONFIG.createUserFunction || "create-user", {
-      body: { name, email, password, role }
-    });
-    if (error) throw new Error(error.message || "Não foi possível criar o usuário.");
-    if (data?.error) throw new Error(data.error);
-    return data.user;
+    try {
+      const { data, error } = await db.functions.invoke(SB.createUserFunction || "create-user", { body: payload });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    } catch (error) {
+      if (/Failed to send|404|not found/i.test(error?.message || "")) throw new Error(`A Edge Function "${SB.createUserFunction || "create-user"}" não está publicada no Supabase.`);
+      throw error;
+    }
   }
-
-  const users = localGet(K.users, DEF_USERS);
-  if (users.some(user => user.email.toLowerCase() === email.toLowerCase())) throw new Error("Já existe um usuário com este e-mail.");
-  const user = { id: crypto.randomUUID(), name, email, password, role, enabled: true, createdAt: new Date().toISOString() };
-  users.unshift(user);
+  const users = localGet(K.users, DEMO.accounts || []);
+  if (users.some(u => u.email.toLowerCase() === payload.email.toLowerCase())) throw new Error("Já existe um usuário com este e-mail.");
+  users.push({ id: crypto.randomUUID(), ...payload, enabled: true, createdAt: new Date().toISOString() });
   localSet(K.users, users);
-  return user;
+  return { ok: true };
 }
 
-async function invokeManageUser(body) {
-  if (!db) return null;
-  const { data, error } = await db.functions.invoke(window.SUPABASE_CONFIG.manageUserFunction || "manage-user", { body });
-  if (error) throw new Error(error.message || "Não foi possível gerenciar o usuário.");
-  if (data?.error) throw new Error(data.error);
-  return data;
-}
-
-async function updateUserAccount({ id, name, email, role, password }) {
+async function manageUser(body) {
   if (db) {
-    const data = await invokeManageUser({ action: "update", id, name, email, role, password: password || undefined });
-    return data.user;
+    try {
+      const { data, error } = await db.functions.invoke(SB.manageUserFunction || "manage-user", { body });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    } catch (error) {
+      if (/Failed to send|404|not found/i.test(error?.message || "")) throw new Error(`A Edge Function "${SB.manageUserFunction || "manage-user"}" não está publicada no Supabase.`);
+      throw error;
+    }
   }
-  const users = localGet(K.users, DEF_USERS);
-  const user = users.find(item => item.id === id);
-  if (!user) throw new Error("Usuário não encontrado.");
-  if (users.some(item => item.id !== id && item.email.toLowerCase() === email.toLowerCase())) throw new Error("Já existe um usuário com este e-mail.");
-  Object.assign(user, { name, email, role });
-  if (password) user.password = password;
-  localSet(K.users, users);
-  return user;
-}
 
-async function setUserEnabled(id, enabled) {
-  if (db) {
-    const data = await invokeManageUser({ action: enabled ? "enable" : "disable", id });
-    return data.user;
+  const users = localGet(K.users, DEMO.accounts || []);
+  const index = users.findIndex(u => u.id === body.userId);
+  if (index < 0) throw new Error("Usuário não encontrado.");
+  if (body.action === "delete") users.splice(index, 1);
+  if (body.action === "toggle") users[index].enabled = Boolean(body.enabled);
+  if (body.action === "update") {
+    users[index] = { ...users[index], name: body.name, email: body.email, role: body.role, ...(body.password ? { password: body.password } : {}) };
   }
-  const users = localGet(K.users, DEF_USERS);
-  const user = users.find(item => item.id === id);
-  if (!user) throw new Error("Usuário não encontrado.");
-  user.enabled = enabled;
   localSet(K.users, users);
-  return user;
-}
-
-async function deleteUserAccount(id) {
-  if (db) {
-    await invokeManageUser({ action: "delete", id });
-    return;
-  }
-  const users = localGet(K.users, DEF_USERS).filter(item => item.id !== id);
-  localSet(K.users, users);
+  return { ok: true };
 }
 
 async function getAnalytics() {
@@ -361,8 +342,10 @@ async function getAnalytics() {
 }
 
 async function metric(propertyId, type) {
+  if (!propertyId || !["views", "clicks"].includes(type)) return;
   if (db) {
-    await db.rpc("increment_property_metric", { p_property_id: propertyId, p_metric: type });
+    const { error } = await db.rpc("increment_property_metric", { p_property_id: propertyId, p_metric: type });
+    if (error) console.warn("Não foi possível registrar métrica:", error.message);
     return;
   }
   const analytics = localGet(K.analytics, {});
@@ -371,42 +354,5 @@ async function metric(propertyId, type) {
   localSet(K.analytics, analytics);
 }
 
-function youtube(url) {
-  if (!url) return "";
-  try {
-    const parsed = new URL(url);
-    const id = parsed.hostname.includes("youtu.be") ? parsed.pathname.slice(1) : parsed.searchParams.get("v") || parsed.pathname.split("/").pop();
-    return id ? `https://www.youtube.com/embed/${id}` : url;
-  } catch {
-    return url;
-  }
-}
-
-function normalizeGoogleMapsEmbed(value) {
-  if (!value) return "";
-
-  const input = value.trim();
-
-  // Caso o usuário cole o iframe inteiro
-  if (input.includes("<iframe")) {
-    const match = input.match(/src=["']([^"']+)["']/i);
-
-    if (match && match[1]) {
-      return match[1];
-    }
-
-    return "";
-  }
-
-  // Caso cole diretamente um link de incorporação
-  if (
-    input.includes("google.com/maps/embed") ||
-    input.includes("maps.google.com/maps/embed")
-  ) {
-    return input;
-  }
-
-  return "";
-}
-
-applyTheme(localStorage.getItem("primeLarTheme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+initializeTheme();
+applyConfigToPage();

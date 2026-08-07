@@ -1,69 +1,63 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json"
 };
 
-Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: corsHeaders });
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
 
   try {
-    const authorization = request.headers.get("Authorization");
-    if (!authorization) throw new Error("Sessão não informada.");
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authorization = req.headers.get("Authorization");
+    if (!authorization) return json({ error: "Sessão ausente." }, 401);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const callerClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authorization } },
-    });
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
+    const callerClient = createClient(url, anon, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false } });
     const { data: authData, error: authError } = await callerClient.auth.getUser();
-    if (authError || !authData.user) throw new Error("Sessão inválida.");
+    if (authError || !authData.user) return json({ error: "Sessão inválida." }, 401);
 
-    const { data: callerProfile, error: profileError } = await adminClient
-      .from("profiles")
-      .select("role")
-      .eq("id", authData.user.id)
-      .single();
-    if (profileError || callerProfile?.role !== "admin") throw new Error("Apenas administradores podem criar usuários.");
+    const { data: caller } = await callerClient.from("profiles").select("role,enabled").eq("id", authData.user.id).single();
+    if (!caller || caller.role !== "admin" || caller.enabled === false) return json({ error: "Somente administradores ativos podem criar usuários." }, 403);
 
-    const { name, email, password, role } = await request.json();
-    if (!name || !email || !password) throw new Error("Nome, e-mail e senha são obrigatórios.");
-    if (password.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres.");
-    if (!["admin", "corretor"].includes(role)) throw new Error("Perfil inválido.");
+    const body = await req.json();
+    const name = String(body.name || "").trim();
+    const email = String(body.email || "").trim().toLowerCase();
+    const password = String(body.password || "");
+    const role = body.role === "admin" ? "admin" : "corretor";
+    if (!name || !email || password.length < 6) return json({ error: "Informe nome, e-mail e uma senha com pelo menos 6 caracteres." }, 400);
 
-    const { data: created, error: createError } = await adminClient.auth.admin.createUser({
-      email: String(email).trim().toLowerCase(),
+    const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
       password,
       email_confirm: true,
-      user_metadata: { name: String(name).trim(), role },
+      user_metadata: { name, role }
     });
-    if (createError) throw createError;
+    if (error) return json({ error: error.message }, 400);
 
-    await adminClient.from("profiles").upsert({
-      id: created.user.id,
-      name: String(name).trim(),
-      email: created.user.email,
+    const { error: profileError } = await admin.from("profiles").upsert({
+      id: data.user.id,
+      name,
+      email,
       role,
-      enabled: true,
+      enabled: true
     });
+    if (profileError) {
+      await admin.auth.admin.deleteUser(data.user.id);
+      return json({ error: `Usuário criado no Auth, mas o perfil falhou: ${profileError.message}` }, 500);
+    }
 
-    return new Response(JSON.stringify({
-      user: { id: created.user.id, name, email: created.user.email, role, enabled: true },
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return json({ ok: true, user: { id: data.user.id, name, email, role, enabled: true } });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message || "Erro interno." }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+    console.error(error);
+    return json({ error: error instanceof Error ? error.message : "Erro interno." }, 500);
   }
 });
